@@ -1,70 +1,90 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import type { NextPage } from "next";
-import { useAccount } from "wagmi";
-import { BugAntIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { Address } from "~~/components/scaffold-eth";
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import type { NextPage } from 'next';
+import { useAccount } from 'wagmi';
+import { ethers } from 'ethers';
+import raffleABI from '~~/components/raffleABI.json';
+import NFTCard from '~~/components/ConnectNFT';
+
+const RAFFLE_CONTRACT_ADDRESS = '0xYourContractAddressHere';
 
 const Home: NextPage = () => {
   const { address: connectedAddress } = useAccount();
+  const [winner, setWinner] = useState<string>('');
+  const [winningAmount, setWinningAmount] = useState<number | null>(null);
+  const [raffleState, setRaffleState] = useState<number | null>(null);
+
+  const cardClass = 'flex flex-col justify-center bg-base-100 w-60 h-40 px-10 py-4 pb-12 text-center items-center text-green-500 rounded-3xl cursor-pointer';
+  const iconClass = 'h-8 w-8 fill-secondary';
+
+  const handleSelectWinner = async () => {
+    try {
+      if (!(window as any).ethereum) {
+        console.error('MetaMask is not installed!');
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider((window as any).ethereum);
+      await provider.send('eth_requestAccounts', []);
+      const signer = provider.getSigner();
+      const raffleContract = new ethers.Contract(RAFFLE_CONTRACT_ADDRESS, raffleABI, await signer);
+
+      // 调用 selectWinner 函数
+      const transaction = await raffleContract.selectWinner();
+      await transaction.wait();
+
+      // 获取成功者地址和金额
+      const winnerAddress = await raffleContract.getLastWinner();
+      const amount = await raffleContract.getWinningAmount();
+      
+      setWinner(winnerAddress);
+      setWinningAmount(amount);
+      
+      // 更新抽奖状态
+      const state = await raffleContract.getRaffleState();
+      setRaffleState(state);
+    } catch (error) {
+      console.error('Error selecting winner:', error);
+    }
+  };
 
   return (
-    <>
-      <div className="flex items-center flex-col flex-grow pt-10">
-        <div className="px-5">
-          <h1 className="text-center">
-            <span className="block text-2xl mb-2">Welcome to</span>
-            <span className="block text-4xl font-bold">Scaffold-ETH 2</span>
-          </h1>
-          <div className="flex justify-center items-center space-x-2">
-            <p className="my-2 font-medium">Connected Address:</p>
-            <Address address={connectedAddress} />
-          </div>
-          <p className="text-center text-lg">
-            Get started by editing{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/nextjs/app/page.tsx
-            </code>
-          </p>
-          <p className="text-center text-lg">
-            Edit your smart contract{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              YourContract.sol
-            </code>{" "}
-            in{" "}
-            <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-              packages/hardhat/contracts
-            </code>
+    <div className="min-h-screen flex flex-col justify-between">
+      <div className="flex justify-center text-3xl md:justify-between px-12 py-8 space-x-8">
+        <div className={cardClass}>
+          <p>
+            Project Party{' '}
+            <Link href="/blockexplorer" passHref className="link">
+              checkin
+            </Link>{' '}
           </p>
         </div>
+        {connectedAddress && <NFTCard walletAddress={connectedAddress} />}
+      </div>
 
-        <div className="flex-grow bg-base-300 w-full mt-16 px-8 py-12">
-          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <BugAntIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Tinker with your smart contract using the{" "}
-                <Link href="/debug" passHref className="link">
-                  Debug Contracts
-                </Link>{" "}
-                tab.
-              </p>
-            </div>
-            <div className="flex flex-col bg-base-100 px-10 py-10 text-center items-center max-w-xs rounded-3xl">
-              <MagnifyingGlassIcon className="h-8 w-8 fill-secondary" />
-              <p>
-                Explore your local transactions with the{" "}
-                <Link href="/blockexplorer" passHref className="link">
-                  Block Explorer
-                </Link>{" "}
-                tab.
-              </p>
-            </div>
+      {/* 中间的卡片 */}
+      <div className="flex justify-center items-center">
+        <div className={cardClass} onClick={handleSelectWinner}>
+          <p>{winner ? `Winner: ${winner}` : 'Click to select winner'}</p>
+          <p>{winningAmount !== null ? `Winning Amount: ${winningAmount} ETH` : ''}</p>
+          <p>{raffleState !== null ? `Raffle State: ${raffleState === 0 ? 'Open' : 'Calculating Winner'}` : 'Loading raffle state...'}</p>
+        </div>
+      </div>
+
+      {/* 下组卡片 */}
+      <div className="flex flex-col justify-end">
+        <div className="flex justify-center text-3xl md:justify-between px-12 pt-4">
+          <div className={cardClass}>
+            <p>Results show</p>
+          </div>
+          <div className={cardClass}>
+            <p>Try to bet</p>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
