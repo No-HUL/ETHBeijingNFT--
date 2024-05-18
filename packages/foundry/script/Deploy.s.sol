@@ -2,12 +2,13 @@
 pragma solidity ^0.8.19;
 
 import "../contracts/Raffle.sol";
+import "../contracts/MockNft.sol";
 import "./DeployHelpers.s.sol";
 
 contract DeployScript is ScaffoldETHDeploy {
     error InvalidPrivateKey(string);
 
-    function run() external {
+    function run() external returns (Raffle, MockNft){
         uint256 deployerPrivateKey = setupLocalhostEnv();
         if (deployerPrivateKey == 0) {
             revert InvalidPrivateKey(
@@ -15,8 +16,8 @@ contract DeployScript is ScaffoldETHDeploy {
             );
         }
         vm.startBroadcast(deployerPrivateKey);
-        Raffle raffle =
-            new Raffle(vm.addr(deployerPrivateKey));
+        Raffle raffle =new Raffle(vm.addr(deployerPrivateKey));
+        MockNft nft = new MockNft("NFT", "NFT");
         console.logString(
             string.concat(
                 "YourContract deployed at: ", vm.toString(address(raffle))
@@ -30,6 +31,8 @@ contract DeployScript is ScaffoldETHDeploy {
          * This function should be called last.
          */
         exportDeployments();
+        
+        return (raffle, nft);
     }
 
     function test() public {}
