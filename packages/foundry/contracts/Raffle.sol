@@ -7,28 +7,33 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 contract Raffle {
 
     error Raffle__PrizePoolCantBeZero();
-    error Raffle__MustBurnNft();
+    error Raffle__NoBalanceToWithdraw();
+    error Raffle__BurnNftNotEnough();
     error Raffle__RaffleNotOpen();
     error Raffle__MustCheckIn();
     error Raffle__MustBeOwner();
+    error Raffle__NoPlayer();
 
     enum RaffleState {
         OPEN,
         CALCULATING_WINNER
     }
 
+    uint256 private constant AMOUNT_BURN_TO_ENTER = 1;
     address[] private s_players; //持有足够数量SNFT的玩家
     mapping(address => bool) private s_nftToBurn;//所有登记过并添加过奖池的NFT
 
     mapping(address => uint256) private s_count; //需要的SNFT数量
     address public immutable owner;
-    mapping(address nftToBurn => mapping(address user => bool burned)) isBurned;
 
-    uint256 private s_lastTimeStamp;
     RaffleState private s_raffleState;
 
     event NftChecked(address indexed nftAddress, address indexed owner);
-    event EnterRaffle(address indexed player);
+    event NewEntry(address indexed player);
+    event RaffleStarted();
+    event RaffleEnded();
+    event WinnerSelected(address indexed winner);
+    event BalanceWithdrawn(uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only the owner can call this contract");
@@ -36,18 +41,24 @@ contract Raffle {
     }
 
     constructor(address _owner){
-        owner = _owner;
-        s_lastTimeStamp = block.timestamp;
+        _owner = msg.sender;
         s_raffleState = RaffleState.OPEN;
     }
 
-    function nftCheckIn(address nftAddress) external {
+    function nftCheckIn(address nftAddress) external payable{
+        if(s_raffleState == RaffleState.OPEN){
+            revert Raffle__RaffleNotOpen();
+        }
+        if(msg.value <= 0){
+            revert Raffle__PrizePoolCantBeZero();
+        }
+
         bool isApproved = IERC721(nftAddress).isApprovedForAll(msg.sender, address(this));
         if(!isApproved){
             IERC721(nftAddress).setApprovalForAll(address(this), true);
         }
 
-        s_nftToBurn[nftAddress] = true;
+        s_nftToBurn[nftAddress] = true;//设置nft已登记
         emit NftChecked(nftAddress, msg.sender);
     }
 
@@ -67,17 +78,19 @@ contract Raffle {
 
         // 将NFT从所有者转移到合约
         IERC721(nftAddress).transferFrom(msg.sender, address(this), tokenId);
+        s_count[msg.sender]++;//玩家销毁NFT+1
     }
 
     function enterRaffle() external payable {
-        if(s_count[msg.sender] == 0){
-            revert Raffle__MustBurnNft();
+        if(s_count[msg.sender] < AMOUNT_BURN_TO_ENTER){
+            revert Raffle__BurnNftNotEnough();
         }
         if(s_raffleState != RaffleState.OPEN) {
             revert Raffle__RaffleNotOpen();
         }
         s_players.push(payable(msg.sender));
-        emit EnterRaffle(msg.sender);
+        emit NewEntry(msg.sender);
+        emit RaffleStarted();
     }
 
     //计算随机数
@@ -94,6 +107,48 @@ contract Raffle {
             );
     }
 
-    
+    function resetPlayers() private {
+        for(uint256 i = 0; i < s_players.length; i++){
+            delete s_players[i];
+        }
+    }
+
+    function selectWinner() external onlyOwner {
+        if(s_raffleState == RaffleState.OPEN){
+            revert Raffle__RaffleNotOpen();
+        }
+        if(s_players.length == 0){
+            revert Raffle__NoPlayer();
+        }
+        s_raffleState = RaffleState.CALCULATING_WINNER;
+        uint256 winnerIndex = random() % s_players.length;
+        address winner = s_players[winnerIndex];
+        emit WinnerSelected(winner);
+
+        resetPlayers();
+        delete s_players;
+        s_raffleState = RaffleState.OPEN;
+    }
+
+    function withdrawBalance() external onlyOwner {
+        uint256 balance = address(this).balance;
+        if(balance == 0){
+            revert Raffle__NoBalanceToWithdraw();
+        }
+        payable(owner).transfer(balance);
+        emit BalanceWithdrawn(balance);
+    }
+
+    function getPlayer() public view returns(address[] memory){
+        return s_players;
+    }
+
+    function getRaffleState() public view returns(RaffleState){
+        return s_raffleState;
+    }
+
+    function getBalance() public view returns(uint256){
+        return address(this).balance;
+    }
 
 }
