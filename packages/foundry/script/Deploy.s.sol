@@ -18,11 +18,11 @@ contract DeployScript is ScaffoldETHDeploy {
         vm.startBroadcast(deployerPrivateKey);
         Raffle raffle =new Raffle(vm.addr(deployerPrivateKey));
         MockNft nft = new MockNft("NFT", "NFT");
-        console.logString(
-            string.concat(
-                "YourContract deployed at: ", vm.toString(address(raffle))
-            )
-        );
+        // console.logString(
+        //     string.concat(
+        //         "raffle contract deployed at: ", vm.toString(address(raffle))
+        //     )
+        // );
         vm.stopBroadcast();
 
         /**

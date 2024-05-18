@@ -46,10 +46,10 @@ contract Raffle {
     }
 
     function nftCheckIn(address nftAddress) external payable{
-        if(s_raffleState == RaffleState.OPEN){
+        if(s_raffleState != RaffleState.OPEN){
             revert Raffle__RaffleNotOpen();
         }
-        if(msg.value <= 0){
+        if(msg.value == 0){
             revert Raffle__PrizePoolCantBeZero();
         }
 
@@ -72,7 +72,7 @@ contract Raffle {
         address nftOwner = IERC721(nftAddress).ownerOf(tokenId);
 
         // 检查调用者是否是NFT的所有者
-        if(nftOwner == msg.sender){
+        if(nftOwner != msg.sender){
             revert Raffle__MustBeOwner();
         }
 
@@ -81,7 +81,7 @@ contract Raffle {
         s_count[msg.sender]++;//玩家销毁NFT+1
     }
 
-    function enterRaffle() external payable {
+    function enterRaffle() external {
         if(s_count[msg.sender] < AMOUNT_BURN_TO_ENTER){
             revert Raffle__BurnNftNotEnough();
         }
@@ -123,20 +123,12 @@ contract Raffle {
         s_raffleState = RaffleState.CALCULATING_WINNER;
         uint256 winnerIndex = random() % s_players.length;
         address winner = s_players[winnerIndex];
+        payable(winner).transfer(address(this).balance);
         emit WinnerSelected(winner);
 
         resetPlayers();
         delete s_players;
         s_raffleState = RaffleState.OPEN;
-    }
-
-    function withdrawBalance() external onlyOwner {
-        uint256 balance = address(this).balance;
-        if(balance == 0){
-            revert Raffle__NoBalanceToWithdraw();
-        }
-        payable(owner).transfer(balance);
-        emit BalanceWithdrawn(balance);
     }
 
     function getPlayer() public view returns(address[] memory){
@@ -149,6 +141,18 @@ contract Raffle {
 
     function getBalance() public view returns(uint256){
         return address(this).balance;
+    }
+
+    function getNftToBurn(address nftAddress) public view returns(bool){
+        return s_nftToBurn[nftAddress];
+    }
+
+    function getCount(address player) public view returns(uint256){
+        return s_count[player];
+    }
+
+    function getPlayersByIndex(uint256 index) public view returns(address){
+        return s_players[index];
     }
 
 }
