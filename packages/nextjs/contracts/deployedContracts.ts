@@ -4,6 +4,134 @@
  */
 import { GenericContractsDeclaration } from "~~/utils/scaffold-eth/contract";
 
-const deployedContracts = {} as const;
+const deployedContracts = {
+  31337: {
+    Raffle: {
+      address: "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      abi: [
+        {
+          type: "constructor",
+          inputs: [
+            {
+              name: "_owner",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "burnNft",
+          inputs: [
+            {
+              name: "nftAddress",
+              type: "address",
+              internalType: "address",
+            },
+            {
+              name: "tokenId",
+              type: "uint256",
+              internalType: "uint256",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "enterRaffle",
+          inputs: [],
+          outputs: [],
+          stateMutability: "payable",
+        },
+        {
+          type: "function",
+          name: "nftCheckIn",
+          inputs: [
+            {
+              name: "nftAddress",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          outputs: [],
+          stateMutability: "nonpayable",
+        },
+        {
+          type: "function",
+          name: "owner",
+          inputs: [],
+          outputs: [
+            {
+              name: "",
+              type: "address",
+              internalType: "address",
+            },
+          ],
+          stateMutability: "view",
+        },
+        {
+          type: "event",
+          name: "EnterRaffle",
+          inputs: [
+            {
+              name: "player",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "event",
+          name: "NftChecked",
+          inputs: [
+            {
+              name: "nftAddress",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+            {
+              name: "owner",
+              type: "address",
+              indexed: true,
+              internalType: "address",
+            },
+          ],
+          anonymous: false,
+        },
+        {
+          type: "error",
+          name: "Raffle__MustBeOwner",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "Raffle__MustBurnNft",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "Raffle__MustCheckIn",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "Raffle__PrizePoolCantBeZero",
+          inputs: [],
+        },
+        {
+          type: "error",
+          name: "Raffle__RaffleNotOpen",
+          inputs: [],
+        },
+      ],
+      inheritedFunctions: {},
+    },
+  },
+} as const;
 
 export default deployedContracts satisfies GenericContractsDeclaration;
