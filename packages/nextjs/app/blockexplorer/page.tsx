@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { NextPage } from "next";
 import { parse } from "papaparse";
+import { NextPage } from "next";
 
 const Home: NextPage = () => {
   const [csvData, setCsvData] = useState<any[]>([]);
@@ -13,7 +13,7 @@ const Home: NextPage = () => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         const text = e.target?.result as string;
         const result = parse(text, { header: true });
         if (result.meta.fields) {
