@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import {MockERC721} from "forge-std/mocks/MockERC721.sol";
+import {MockERC721} from "../lib/forge-std/src/mocks/MockERC721.sol";
 
 contract MockNft is MockERC721 {
     constructor(string memory name_, string memory symbol_) {

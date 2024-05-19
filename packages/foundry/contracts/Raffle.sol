@@ -1,6 +1,7 @@
 //SPDX-License-Identifier:MIT
 pragma solidity ^0.8.19;
 
+import {console} from "../lib/forge-std/src/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
@@ -68,15 +69,13 @@ contract Raffle {
             revert Raffle__MustCheckIn();
         }
 
-        // 获取NFT的所有者
-        address nftOwner = IERC721(nftAddress).ownerOf(tokenId);
-
         // 检查调用者是否是NFT的所有者
-        if(nftOwner != msg.sender){
+        if( IERC721(nftAddress).ownerOf(tokenId) != msg.sender){
             revert Raffle__MustBeOwner();
         }
 
         // 将NFT从所有者转移到合约
+        IERC721(nftAddress).approve(address(this), tokenId);
         IERC721(nftAddress).transferFrom(msg.sender, address(this), tokenId);
         s_count[msg.sender]++;//玩家销毁NFT+1
     }
@@ -90,7 +89,6 @@ contract Raffle {
         }
         s_players.push(payable(msg.sender));
         emit NewEntry(msg.sender);
-        emit RaffleStarted();
     }
 
     //计算随机数
@@ -114,7 +112,7 @@ contract Raffle {
     }
 
     function selectWinner() external onlyOwner {
-        if(s_raffleState == RaffleState.OPEN){
+        if(s_raffleState != RaffleState.OPEN){
             revert Raffle__RaffleNotOpen();
         }
         if(s_players.length == 0){
