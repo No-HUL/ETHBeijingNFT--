@@ -15,5 +15,10 @@ export const Footer = () => {
   const { targetNetwork } = useTargetNetwork();
   const isLocalNetwork = targetNetwork.id === hardhat.id;
 
-  return <div className=""></div>;
+  return (
+    <div className="">
+    
+      
+    </div>
+  );
 };
